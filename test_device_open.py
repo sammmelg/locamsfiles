@@ -8,7 +8,7 @@ import glob
 # find out how to run at a specific time each day (preferably to get capture start time and run
 # shortly after that
 # Initiate a global variable for station ID, get from config file
-stat_id = 'USL00E'
+stat_id = 'USL005'
 
 def main():
     # Get the current log
@@ -29,7 +29,7 @@ def get_current_log():
     # Find the most current log file based on the string 'log_*stationID*_*todaysYYYYMMDD*_******WILDCARD******.log
     # Initialize the log string variable
     date = datetime.datetime.today().strftime('%Y%m%d')
-    log_search = 'log_' + stat_id + '_' + '20220212' + '_*************.log'
+    log_search = 'log_' + stat_id + '_' + '20220211' + '_*************.log'
 
     # Search for that file in the directory
     log = glob.glob(log_search)
