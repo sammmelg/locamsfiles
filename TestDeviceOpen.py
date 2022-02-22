@@ -4,15 +4,14 @@ import datetime
 from email.mime.text import MIMEText
 import os
 import glob
-import ConfigReader as cr
 
-# File should run from the Utils folder
-# Find out how to run at a specific time each day (preferably to get capture start time and run
-# shortly after that
-# Initiate a global variable for station ID, get from config file
-# stat_id = 'USL00E'
-config = cr.loadConfigFromDirectory(cml_args.config, os.path.abspath('.'))
-stat_id = str(config.stationID)
+# Insert following text into crontab to automate runnning on the pi at 7pm nightly.  Script must be in
+# /home/pi/source/RMS/Utils directory:
+# SHELL=/bin/sh
+# PATH=/home/pi/vRMS/bin:/usr/local/Qt-5.15.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# 00 19 * * * cd /home/pi/source/RMS/Utils && python3.7 TestDeviceOpen.py
+
+stat_id = str(os.uname()[1])
 
 def main():
     # Get the current log
@@ -52,6 +51,7 @@ def read_log(infile):
                 return False
 
     # If log does not read 'The video source could not be opened!', return True
+    print('"The video source could not be opened!" was not found in the log file.')
     return True
 
 
@@ -79,6 +79,7 @@ def send_email():
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, msg.as_string())
 
+    print('An email alert has been sent!')
     return None
 
 
