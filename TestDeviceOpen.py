@@ -11,7 +11,10 @@ import glob
 # PATH=/home/pi/vRMS/bin:/usr/local/Qt-5.15.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # 00 19 * * * cd /home/pi/source/RMS/Utils && python3.7 TestDeviceOpen.py
 
+# 3/2/2022: Updated script to create a log file indicating daily results.
+
 stat_id = str(os.uname()[1])
+
 
 def main():
     # Get the current log
@@ -23,6 +26,8 @@ def main():
     # If the camera is not open, send an email
     if camera_status == False:
         send_email()
+
+    log_result(camera_status)
 
 
 def get_current_log():
@@ -55,6 +60,34 @@ def read_log(infile):
     return True
 
 
+def log_result(status):
+    # Go to the log directory
+    os.chdir('/home/pi/RMS_data/logs')
+
+    # Set current date and time, times recorded are in local time zone
+    date = datetime.datetime.now()
+
+    # If the camera opened, write to the log that device open was successful
+    if status == True:
+        with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + ': Device open was successful!\n')
+
+    # If the camera did not open, write to the log that the device was not opened and alert email was sent
+    if status == False:
+        with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + ': Device not opened, alert sent.\n')
+
+    # Read the current log file, if there are more than 60 lines (days), delete the first line and re-write the file
+    log = open('CamStatusLog_' + stat_id + '.txt', 'r')
+    lines = log.readlines()
+    line_count = len(lines)
+    if line_count > 30:
+        del lines[0]
+        new_log = open('CamStatusLog_' + stat_id + '.txt', 'w')
+        for line in lines:
+            new_log.write(line)
+
+
 def send_email():
     # Get date and time
     now = datetime.datetime.now()
@@ -79,7 +112,6 @@ def send_email():
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, msg.as_string())
 
-    print('An email alert has been sent!')
     return None
 
 
