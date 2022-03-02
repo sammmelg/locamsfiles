@@ -84,7 +84,6 @@ def read_log(infile):
                 return False
 
     # If log does not read 'The video source could not be opened!', return True
-    print('"The video source could not be opened!" was not found in the log file.')
     return True
 
 
