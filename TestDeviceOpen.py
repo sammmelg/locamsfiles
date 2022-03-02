@@ -46,20 +46,6 @@ def get_current_log():
     return log
 
 
-def read_log(infile):
-    # Open and read the log file
-    with open(infile, 'r') as log_file:
-        for line in log_file:
-
-            # if anywhere in the file reads 'The video source could not be opened!', return False
-            if 'The video source could not be opened!' in line:
-                return False
-
-    # If log does not read 'The video source could not be opened!', return True
-    print('"The video source could not be opened!" was not found in the log file.')
-    return True
-
-
 def log_result(status):
     # Go to the log directory
     os.chdir('/home/pi/RMS_data/logs')
@@ -86,6 +72,20 @@ def log_result(status):
         new_log = open('CamStatusLog_' + stat_id + '.txt', 'w')
         for line in lines:
             new_log.write(line)
+
+
+def read_log(infile):
+    # Open and read the log file
+    with open(infile, 'r') as log_file:
+        for line in log_file:
+
+            # if anywhere in the file reads 'The video source could not be opened!', return False
+            if 'The video source could not be opened!' in line:
+                return False
+
+    # If log does not read 'The video source could not be opened!', return True
+    print('"The video source could not be opened!" was not found in the log file.')
+    return True
 
 
 def send_email():
