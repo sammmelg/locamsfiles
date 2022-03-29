@@ -4,16 +4,30 @@ import datetime
 from email.mime.text import MIMEText
 import os
 import glob
+import RMS.ConfigReader as cr
+from RMS.CaptureDuration import captureDuration
+import os
+import time
 
-# Insert following text into crontab to automate runnning on the pi at 7pm nightly.  Script must be in
+# Insert following text into crontab to automate running on the pi at specific time nightly.  Script must be in
 # /home/pi/source/RMS/Utils directory:
 # SHELL=/bin/sh
 # PATH=/home/pi/vRMS/bin:/usr/local/Qt-5.15.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # 00 19 * * * cd /home/pi/source/RMS/Utils && python3.7 TestDeviceOpen.py
 
 # 3/2/2022: Updated script to create a log file indicating daily results.
+# 3/29/2022: Added reading config file and determining wait time so that crontab does not need to be updated so often.
+#   [Lines 22 thru 30] Added to log with time the script starts along with total_wait [Lines 73, 74 & 80, 81].
 
 stat_id = str(os.uname()[1])
+config = cr.loadConfigFromDirectory('.', os.path.abspath('/home/pi/source/RMS'))
+cap_time = captureDuration(config.latitude, config.longitude, config.elevation)
+start_time = cap_time[0]
+utc_now = datetime.datetime.utcnow()
+wait = start_time - utc_now
+seconds = wait.total_seconds()
+total_wait = seconds + 600
+time.sleep(total_wait)
 
 
 def main():
@@ -56,18 +70,20 @@ def log_result(status):
     # If the camera opened, write to the log that device open was successful
     if status == True:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
-            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + ': Device open was successful!\n')
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device open was successful!  Script opened at {utc_now}'
+                                                               f' and waited for {total_wait} seconds.\n')
 
     # If the camera did not open, write to the log that the device was not opened and alert email was sent
     if status == False:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
-            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + ': Device not opened, alert sent.\n')
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not opened, alert sent.  Script opened at '
+                                                               f'{utc_now} and waited for {total_wait} seconds.\n')
 
     # Read the current log file, if there are more than 60 lines (days), delete the first line and re-write the file
     log = open('CamStatusLog_' + stat_id + '.txt', 'r')
     lines = log.readlines()
     line_count = len(lines)
-    if line_count > 30:
+    if line_count > 60:
         del lines[0]
         new_log = open('CamStatusLog_' + stat_id + '.txt', 'w')
         for line in lines:
