@@ -3,7 +3,9 @@ import os
 import argparse
 
 def main():
-    get_config()
+    print('Getting config file, please wait')
+    conf_file = get_config()
+    print(conf_file.latitude)
 
 def get_config():
     arg_parser = argparse.ArgumentParser(description=""" Tests if device opened for capture.""")
@@ -12,7 +14,8 @@ def get_config():
     cml_args = arg_parser.parse_args()
     config = cr.loadConfigFromDirectory(cml_args.config, os.path.abspath('.'))
 
-    print(config.latitude)
+    return config
 
 if __name__ == '__main__':
     main()
+    
