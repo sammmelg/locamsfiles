@@ -19,7 +19,7 @@ import time
 # 3/2/2022: Updated script to create a log file indicating daily results.
 # 3/29/2022: Added reading config file and determining wait time so that crontab does not need to be updated so often.
 # Script gets latitude, longitude, and elevation from config file, runs captureDuration with that information to get
-# the start time for that evening, determines the difference between that time and the current time, then adds 10 minutes
+# the start time for that evening, determines the difference between that time and the current time, then adds 5 minutes
 # to determine the sleep time before the rest of the script runs.  [Lines 22 thru 30] Added to log with time the script
 # starts along with total_wait [Lines 73, 74 & 80, 81].  Uploaded first to USL001 for testing on 3/29/22, crontab edited
 # to run at 17:00:
@@ -32,7 +32,7 @@ start_time = cap_time[0]
 utc_now = datetime.datetime.utcnow()
 wait = start_time - utc_now
 seconds = wait.total_seconds()
-total_wait = seconds + 600
+total_wait = seconds + 300
 time.sleep(total_wait)
 
 
