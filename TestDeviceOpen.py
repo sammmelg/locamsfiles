@@ -30,6 +30,7 @@ config = cr.loadConfigFromDirectory('.', os.path.abspath('/home/pi/source/RMS'))
 cap_time = captureDuration(config.latitude, config.longitude, config.elevation)
 start_time = cap_time[0]
 utc_now = datetime.datetime.utcnow()
+open_time = datetime.datetime.now()
 wait = start_time - utc_now
 seconds = wait.total_seconds()
 total_wait = seconds + 300
@@ -76,14 +77,14 @@ def log_result(status):
     # If the camera opened, write to the log that device open was successful
     if status == True:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
-            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device open was successful! Script opened at {date}'
-                                                               f' and waited for {total_wait} seconds.\n')
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device open was successful! Script opened at {open_time}'
+                                                               f' and waited for {total_wait * 60} minutes after opening.\n')
 
     # If the camera did not open, write to the log that the device was not opened and alert email was sent
     if status == False:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
-            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not opened, alert sent. Script opened at '
-                                                               f'{date} and waited for {total_wait} seconds.\n')
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not opened, alert sent. Script opened at {open_time}'
+                                                               f' and waited for {total_wait * 60} minutes after opening.\n')
 
     # Read the current log file, if there are more than 60 lines (days), delete the first line and re-write the file
     log = open('CamStatusLog_' + stat_id + '.txt', 'r')
