@@ -1,0 +1,132 @@
+import smtplib
+import ssl
+import datetime
+from email.mime.text import MIMEText
+import os
+import glob
+import RMS.ConfigReader as cr
+from RMS.CaptureDuration import captureDuration
+import os
+import time
+import slack
+
+# Insert following text into crontab to automate running on the pi at specific time nightly.  Script must be in
+# /home/pi/source/RMS/Utils directory:
+# SHELL=/bin/bash
+# PATH=/home/pi/vRMS/bin:/usr/local/Qt-5.15.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# 00 19 * * * cd /home/pi/source/RMS/Utils && python3.7 TestDeviceOpen.py
+
+############UPDATES:
+# 3/2/2022: Updated script to create a log file indicating daily results.
+# 3/29/2022: Added reading config file and determining wait time so that crontab does not need to be updated so often.
+# Script gets latitude, longitude, and elevation from config file, runs captureDuration with that information to get
+# the start time for that evening, determines the difference between that time and the current time, then adds 5 minutes
+# to determine the sleep time before the rest of the script runs.  [Lines 22 thru 30] Added to log with time the script
+# starts along with total_wait [Lines 73, 74 & 80, 81].  Uploaded first to USL001 for testing on 3/29/22, crontab edited
+# to run at 17:00:
+# 4/6/2022: Changed email alert to a Slack alert.  Issue pip install slackclient for library used.
+
+# Currently installed on: All Mars Hill cameras, USL00R, USL00S, USL00T
+
+
+stat_id = str(os.uname()[1])
+config = cr.loadConfigFromDirectory('.', os.path.abspath('/home/pi/source/RMS'))
+cap_time = captureDuration(config.latitude, config.longitude, config.elevation)
+start_time = cap_time[0]
+utc_now = datetime.datetime.utcnow()
+open_time = datetime.datetime.now()
+wait = start_time - utc_now
+seconds = wait.total_seconds()
+total_wait = seconds + 300
+time.sleep(total_wait)
+
+
+def main():
+    # Get the current log
+    file = get_current_log()[0]
+
+    # Read the log to see if the camera opened, if camera not opened for capture then camera status = False
+    camera_status = read_log(file)
+
+    # If the camera is not open, send an email
+    if camera_status == False:
+        send_slack_alert()
+
+    log_result(camera_status)
+
+
+def get_current_log():
+    # Go to the log directory
+    os.chdir('/home/pi/RMS_data/logs')
+
+    # Find the most current log file based on the string 'log_*stationID*_*todaysYYYYMMDD*_******WILDCARD******.log
+    # Initialize the log string variable
+    date = datetime.datetime.today().strftime('%Y%m%d')
+    log_search = 'log_' + stat_id + '_' + date + '_*************.log'
+
+    # Search for that file in the directory
+    log = glob.glob(log_search)
+
+    # Return that file to be read
+    return log
+
+
+def log_result(status):
+    # Go to the log directory
+    os.chdir('/home/pi/RMS_data/logs')
+
+    # Set current date and time, times recorded are in local time zone
+    date = datetime.datetime.now()
+
+    # If the camera opened, write to the log that device open was successful
+    if status == True:
+        with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device open was successful! Script opened at {open_time}'
+                                                               f' and waited for {total_wait / 60} minutes after opening.\n')
+
+    # If the camera did not open, write to the log that the device was not opened and alert email was sent
+    if status == False:
+        with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not opened, alert sent. Script opened at {open_time}'
+                                                               f' and waited for {total_wait / 60} minutes after opening.\n')
+
+    # Read the current log file, if there are more than 60 lines (days), delete the first line and re-write the file
+    log = open('CamStatusLog_' + stat_id + '.txt', 'r')
+    lines = log.readlines()
+    line_count = len(lines)
+    if line_count > 60:
+        del lines[0]
+        new_log = open('CamStatusLog_' + stat_id + '.txt', 'w')
+        for line in lines:
+            new_log.write(line)
+
+
+def read_log(infile):
+    # Open and read the log file
+    with open(infile, 'r') as log_file:
+        for line in log_file:
+
+            # if anywhere in the file reads 'The video source could not be opened!', return False
+            if 'The video source could not be opened!' in line:
+                return False
+
+    # If log does not read 'The video source could not be opened!', return True
+    return True
+
+
+def send_slack_alert():
+    # Get date and time
+    now = datetime.datetime.now()
+    current_time = now.strftime('%H:%M:%S on %m/%d/%Y')
+
+    # Send a slack alert to LOCAMS alerts slack channel
+    slack_token = os.environ.get('SLACK_TOKEN')
+    client = slack.WebClient(token=slack_token)
+    client.chat_postMessage(channel='alert-system',
+                            text=f'The camera {stat_id} is currently showing a failure at {current_time}')
+
+    return None
+
+
+if __name__ == '__main__':
+    main()
