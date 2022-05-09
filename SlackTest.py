@@ -13,4 +13,4 @@ current_time = now.strftime('%H:%M:%S on %m/%d/%Y')
 # Send a slack alert to LOCAMS alerts slack channel
 slack_token = os.environ.get('SLACK_TOKEN')
 client = slack.WebClient(token=slack_token)
-client.chat_postMessage(channel='alert-system', text=f'This is only a test from Sams Computer at {current_time}!')
+client.chat_postMessage(channel='alert-system', text=f'This is only a test from {stat_id} at {current_time}!')
