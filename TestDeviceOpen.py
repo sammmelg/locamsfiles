@@ -31,7 +31,7 @@ def main():
     if camera_status == False:
         send_slack_alert()
 
-    log_result(camera_status)
+    log_result(camera_status, file)
 
 
 def get_current_log():
@@ -50,7 +50,7 @@ def get_current_log():
     return log
 
 
-def log_result(status):
+def log_result(status, current_log):
     # Go to the log directory
     os.chdir('/home/pi/RMS_data/logs')
 
@@ -61,13 +61,15 @@ def log_result(status):
     if status == True:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
             logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device open was successful! Script opened at {open_time}'
-                                                               f' and waited for {total_wait / 60} minutes after opening.\n')
+                                                               f' and waited for {total_wait / 60} minutes after opening.'
+                                                               f' The log file read was {current_log}\n')
 
     # If the camera did not open, write to the log that the device was not opened and alert email was sent
     if status == False:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
             logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not opened, alert sent. Script opened at {open_time}'
-                                                               f' and waited for {total_wait / 60} minutes after opening.\n')
+                                                               f' and waited for {total_wait / 60} minutes after opening.'
+                                                               f' The log file read was {current_log}\n')
 
     # Read the current log file, if there are more than 60 lines (days), delete the first line and re-write the file
     log = open('CamStatusLog_' + stat_id + '.txt', 'r')
