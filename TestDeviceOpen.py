@@ -67,7 +67,7 @@ def log_result(status, current_log):
     # If the camera did not open, write to the log that the device was not opened and alert email was sent
     if status == False:
         with open('CamStatusLog_' + stat_id + '.txt', 'a+') as logfile:
-            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not opened, alert sent. Script opened at {open_time}'
+            logfile.write(date.strftime('%m/%d/%Y %H:%M:%S') + f': Device not capturing, alert sent. Script opened at {open_time}'
                                                                f' and waited for {total_wait / 60} minutes after opening.'
                                                                f' The log file read was {current_log}\n')
 
@@ -107,7 +107,7 @@ def send_slack_alert(status):
 
     # Send a different alert based on if the camera is open or closed
     if status == False:
-        client.chat_postMessage(channel='alert-system', text=f'The camera {stat_id} is showing a failure at {current_time}!')
+        client.chat_postMessage(channel='alert-system', text=f'The camera {stat_id} is NOT capturing at {current_time}!')
 
     else:
         client.chat_postMessage(channel='alert-system', text=f'The camera {stat_id} is open at {current_time}.')
