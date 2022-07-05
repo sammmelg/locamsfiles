@@ -27,10 +27,10 @@ def main():
     # Read the log to see if the camera opened, if camera not opened for capture then camera status = False
     camera_status = read_log(file)
 
-    # If the camera is not open, send an email
-    if camera_status == False:
-        send_slack_alert()
+    # Send a slack alert
+    send_slack_alert(camera_status)
 
+    # Log the result
     log_result(camera_status, file)
 
 
@@ -87,15 +87,16 @@ def read_log(infile):
     with open(infile, 'r') as log_file:
         for line in log_file:
 
-            # if anywhere in the file reads 'The video source could not be opened!', return False
-            if 'The video source could not be opened!' in line:
-                return False
+            # If anywhere in the file reads 'Video device opened!', return True
+            if 'Video device opened!' in line:
+                return True
 
-    # If log does not read 'The video source could not be opened!', return True
-    return True
+    # If log does not find 'Video device opened!', return False
+    # This means that it got thru the entire log file and did not find that the device was open, so send an alert.
+    return False
 
 
-def send_slack_alert():
+def send_slack_alert(status):
     # Get date and time
     now = datetime.datetime.now()
     current_time = now.strftime('%H:%M:%S on %m/%d/%Y')
@@ -103,7 +104,13 @@ def send_slack_alert():
     # Send a slack alert to LOCAMS alerts slack channel
     slack_token = os.environ.get('SLACK_TOKEN')
     client = slack_sdk.WebClient(token=slack_token)
-    client.chat_postMessage(channel='alert-system', text=f'The camera {stat_id} is showing a failure at {current_time}!')
+
+    # Send a different alert based on if the camera is open or closed
+    if status == False:
+        client.chat_postMessage(channel='alert-system', text=f'The camera {stat_id} is showing a failure at {current_time}!')
+
+    else:
+        client.chat_postMessage(channel='alert-system', text=f'The camera {stat_id} is open at {current_time}.')
 
     return None
 
